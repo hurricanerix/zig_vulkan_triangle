@@ -1,0 +1,27 @@
+# Allowlisting gitignore template for Zig projects prevents us
+# from adding various unwanted local files, such as generated
+# files, developer configurations or IDE-specific files etc.
+
+# Ignore everything
+*
+
+# But not these files...
+!/.gitignore
+
+!*.zig
+!build.zig.zon
+
+!vendor/**/*.c
+!vendor/**/*.h
+
+!README.md
+!LICENSE
+
+!Makefile
+
+# ...even if they are in subdirectories
+!*/
+
+# Unless they are these...
+.zig-cache/
+zig-out/
