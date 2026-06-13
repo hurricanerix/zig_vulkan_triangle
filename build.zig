@@ -9,8 +9,15 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
     });
+
+    exe.root_module.linkSystemLibrary("glfw", .{});
+    exe.root_module.linkSystemLibrary("vulkan", .{});
+
+    exe.root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
+    exe.root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
 
     b.installArtifact(exe);
 }
