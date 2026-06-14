@@ -1,36 +1,17 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("GLFW/glfw3.h");
-    @cInclude("vulkan/vulkan.h");
-});
+const glfw = @import("glfw.zig");
+const c = @import("c.zig").c;
 
 pub fn main() !void {
     var gpa: std.heap.DebugAllocator(.{}) = .{};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    if (c.glfwInit() != c.GLFW_TRUE) {
-        std.debug.print("GLFW failed to initialize\n", .{});
+    const glfw_context = glfw.create_context(640, 480, "Hello Triangle") catch |err| {
+        std.debug.print("Failed to create GLFW context: {}\n", .{err});
         return;
-    }
-    defer c.glfwTerminate();
-
-    if (c.glfwVulkanSupported() == c.GLFW_FALSE) {
-        std.debug.print("Vulkan is not supported\n", .{});
-        return;
-    }
-
-    std.debug.print("GLFW initialized\n", .{});
-
-    c.glfwWindowHint(c.GLFW_CLIENT_API, c.GLFW_NO_API);
-
-    const window = c.glfwCreateWindow(640, 480, "Hello Triangle", null, null);
-    if (window == null) {
-        std.debug.print("GLFW failed to create window\n", .{});
-        return;
-    }
-
-    std.debug.print("GLFW created window\n", .{});
+    };
+    defer glfw_context.deinit();
 
     const appInfo: c.VkApplicationInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -41,15 +22,12 @@ pub fn main() !void {
         .apiVersion = c.VK_API_VERSION_1_4,
     };
 
-    var glfwExtensionsCount: u32 = undefined;
-    const glfwExtensions = c.glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
-
     // TODO: move to func that gets OS extensions
-    const extensionsCount = glfwExtensionsCount + 1;
+    const extensionsCount = glfw_context.extension_count + 1;
     const extensions = try allocator.alloc([*c]const u8, extensionsCount);
     defer allocator.free(extensions);
-    for (0..glfwExtensionsCount) |i| {
-        extensions[i] = glfwExtensions[i];
+    for (0..glfw_context.extension_count) |i| {
+        extensions[i] = glfw_context.extensions[i];
     }
     extensions[extensionsCount - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
 
@@ -76,7 +54,7 @@ pub fn main() !void {
 
     std.debug.print("Vulkan instance created\n", .{});
 
-    while (c.glfwWindowShouldClose(window) == c.GLFW_FALSE) {
+    while (c.glfwWindowShouldClose(glfw_context.window) == c.GLFW_FALSE) {
         // TODO: Render here
 
         // TODO: Swap front and back buffers
