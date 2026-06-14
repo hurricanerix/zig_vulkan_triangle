@@ -25,4 +25,11 @@ brew install vulkan-headers vulkan-validationlayers vulkan-tools glslang
 ```
 zig build
 ./zig-out/bin/vulkan_triangle
+GLFW initialized
+GLFW created window
+requested 3 extensions
+	using: VK_KHR_surface
+	using: VK_EXT_metal_surface
+	using: VK_KHR_portability_enumeration
+Vulkan instance created
 ```
