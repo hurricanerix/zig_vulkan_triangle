@@ -13,7 +13,7 @@ pub fn main() !void {
     };
     defer glfw_context.deinit();
 
-    const appInfo: c.VkApplicationInfo = .{
+    const app_info: c.VkApplicationInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = "Hello Triangle",
         .applicationVersion = c.VK_MAKE_VERSION(1, 0, 0),
@@ -23,29 +23,29 @@ pub fn main() !void {
     };
 
     // TODO: move to func that gets OS extensions
-    const extensionsCount = glfw_context.extension_count + 1;
-    const extensions = try allocator.alloc([*c]const u8, extensionsCount);
+    const extensions_count = glfw_context.extension_count + 1;
+    const extensions = try allocator.alloc([*c]const u8, extensions_count);
     defer allocator.free(extensions);
     for (0..glfw_context.extension_count) |i| {
         extensions[i] = glfw_context.extensions[i];
     }
-    extensions[extensionsCount - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    extensions[extensions_count - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
 
-    std.debug.print("requested {d} extensions\n", .{extensionsCount});
-    for (0..extensionsCount) |i| {
+    std.debug.print("requested {d} extensions\n", .{extensions_count});
+    for (0..extensions_count) |i| {
         std.debug.print("\tusing: {s}\n", .{extensions[i]});
     }
 
-    const createInfo: c.VkInstanceCreateInfo = .{
+    const create_info: c.VkInstanceCreateInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .flags = c.VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
-        .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = extensionsCount,
+        .pApplicationInfo = &app_info,
+        .enabledExtensionCount = extensions_count,
         .ppEnabledExtensionNames = extensions.ptr,
     };
 
     var instance: c.VkInstance = undefined;
-    if (c.vkCreateInstance(&createInfo, null, &instance) != c.VK_SUCCESS) {
+    if (c.vkCreateInstance(&create_info, null, &instance) != c.VK_SUCCESS) {
         // TODO: provide richer error messages with vkGetInstanceExtensionProperties.
         std.debug.print("Error creating Vulkan instance\n", .{});
         return;
