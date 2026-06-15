@@ -18,6 +18,7 @@ pub fn main() !void {
     };
 
     const vk_version = vulkan.VERSION_1_4;
+    const vk_extensions = [_][:0]const u8{"VK_EXT_debug_utils"};
 
     const screen_width = 640;
     const screen_height = 480;
@@ -32,26 +33,14 @@ pub fn main() !void {
     };
     defer glfw_context.deinit();
 
-    var extension_count = glfw_context.extension_count;
-    if (builtin.os.tag == .macos) {
-        extension_count += 1;
-    }
-
+    const extension_count = glfw_context.extension_count + vk_extensions.len;
     const extensions = try allocator.alloc([:0]const u8, extension_count);
     defer allocator.free(extensions);
     for (0..glfw_context.extension_count) |i| {
         extensions[i] = std.mem.span(glfw_context.extensions[i]);
     }
-
-    if (builtin.os.tag == .macos) {
-        extensions[extension_count - 1] = @as([:0]const u8, vulkan.PORTABILITY_EXTENSION_NAME);
-    }
-
-    if (comptime builtin.mode == .Debug) {
-        std.debug.print("configuring {d} vulkan extensions\n", .{extensions.len});
-        for (0..extensions.len) |i| {
-            std.debug.print("\t{s}\n", .{extensions[i]});
-        }
+    for (0..vk_extensions.len) |i| {
+        extensions[glfw_context.extension_count + i] = vk_extensions[i];
     }
 
     const vulkan_context = vulkan.create_context(allocator, app_info, app_info, vk_version, extensions) catch |err| {

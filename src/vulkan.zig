@@ -5,8 +5,6 @@ const meta = @import("meta.zig");
 
 const Error = error{ ExtensionsAllocationFailed, CreateInstanceFailed };
 
-pub const PORTABILITY_EXTENSION_NAME = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
-
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
 pub const VERSION_1_2 = c.VK_API_VERSION_1_2;
@@ -33,23 +31,34 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
 
     if (comptime builtin.mode == .Debug) std.debug.print("vulkan app info created\n\t{}\n", .{vk_app_info});
 
-    const extensions_c_count = @as(u32, @min(extensions.len, std.math.maxInt(u32)));
+    const is_metal_surface = for (extensions) |ext| {
+        if (std.mem.eql(u8, ext, "VK_EXT_metal_surface")) break true;
+    } else false;
+
+    const extensions_extra_count: u32 = if (is_metal_surface) 1 else 0;
+    const extensions_c_count = @as(u32, @min(extensions.len, std.math.maxInt(u32))) + extensions_extra_count;
     const extensions_c = allocator.alloc([*c]const u8, extensions_c_count) catch |err| {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for extensions {}\n", .{err});
         return Error.ExtensionsAllocationFailed;
     };
-
-    var flags: c.VkFlags = 0;
-
-    for (0..extensions_c_count) |i| {
-        extensions_c[i] = @ptrCast(@alignCast(extensions[i].ptr));
-        if (std.mem.eql(u8, extensions[i], PORTABILITY_EXTENSION_NAME)) {
-            flags |= c.VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-        }
-    }
     defer allocator.free(extensions_c);
 
-    if (comptime builtin.mode == .Debug) std.debug.print("vulkan extensions converted from zig to c format\n", .{});
+    var flags: c.VkFlags = 0;
+    for (0..extensions.len) |i| {
+        extensions_c[i] = @ptrCast(@alignCast(extensions[i].ptr));
+    }
+
+    if (is_metal_surface) {
+        flags |= c.VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        extensions_c[extensions_c_count - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    }
+
+    if (comptime builtin.mode == .Debug) {
+        std.debug.print("using {d} vulkan extensions\n", .{extensions_c_count});
+        for (0..extensions_c_count) |i| {
+            std.debug.print("\t{s}\n", .{extensions_c[i]});
+        }
+    }
 
     const vk_create_info: c.VkInstanceCreateInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
