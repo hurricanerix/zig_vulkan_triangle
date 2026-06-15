@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const glfw = @import("glfw.zig");
 const vulkan = @import("vulkan.zig");
-const c = @import("c.zig").c;
 
 pub fn main() !void {
     var gpa: std.heap.DebugAllocator(.{}) = .{};
@@ -22,10 +21,6 @@ pub fn main() !void {
 
     const screen_width = 640;
     const screen_height = 480;
-
-    // TODO: move extensions here.
-
-    // End App Configuration
 
     const glfw_context = glfw.create_context(screen_width, screen_height, app_info.name) catch |err| {
         std.debug.print("Failed to create GLFW context: {}\n", .{err});
@@ -49,11 +44,11 @@ pub fn main() !void {
     };
     defer vulkan_context.deinit();
 
-    while (c.glfwWindowShouldClose(glfw_context.window) == c.GLFW_FALSE) {
+    while (!glfw_context.window_should_close()) {
         // TODO: Render here
 
         // TODO: Swap front and back buffers
 
-        c.glfwPollEvents();
+        glfw_context.poll_events();
     }
 }

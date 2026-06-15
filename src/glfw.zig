@@ -16,6 +16,14 @@ pub const Context = struct {
     pub fn deinit(_: Context) void {
         c.glfwTerminate();
     }
+
+    pub fn window_should_close(self: Context) bool {
+        return c.glfwWindowShouldClose(self.window) == c.GLFW_TRUE;
+    }
+
+    pub fn poll_events(_: Context) void {
+        c.glfwPollEvents();
+    }
 };
 
 pub fn create_context(width: i32, height: i32, name: [*c]const u8) !Context {
