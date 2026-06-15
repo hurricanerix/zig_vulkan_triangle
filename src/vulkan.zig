@@ -1,7 +1,7 @@
-const builtin = @import("builtin");
 const std = @import("std");
-const c = @import("c.zig").c;
+const builtin = @import("builtin");
 const meta = @import("meta.zig");
+const c = @import("c.zig").c;
 
 const Error = error{ ExtensionsAllocationFailed, CreateInstanceFailed };
 

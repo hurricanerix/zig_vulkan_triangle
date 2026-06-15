@@ -1,9 +1,9 @@
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
+const meta = @import("meta.zig");
 const glfw = @import("glfw.zig");
 const vulkan = @import("vulkan.zig");
 const c = @import("c.zig").c;
-const meta = @import("meta.zig");
 
 pub fn main() !void {
     var gpa: std.heap.DebugAllocator(.{}) = .{};
