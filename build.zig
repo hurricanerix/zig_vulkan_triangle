@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
@@ -16,8 +17,10 @@ pub fn build(b: *std.Build) void {
     exe.root_module.linkSystemLibrary("glfw", .{});
     exe.root_module.linkSystemLibrary("vulkan", .{});
 
-    exe.root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
-    exe.root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+    if (builtin.os.tag == .macos) {
+        exe.root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
+        exe.root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+    }
 
     b.installArtifact(exe);
 }
