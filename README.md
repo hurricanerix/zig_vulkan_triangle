@@ -29,14 +29,15 @@ glfw initialized
 glfw reports vulkan supported
 glfw window created
 glfw extensions received
-configuring 3 vulkan extensions
+vulkan app info created
+	.{ .sType = 0, .pNext = null, .pApplicationName = u8@100f6e870, .applicationVersion = 1, .pEngineName = u8@100f6e870, .engineVersion = 1, .apiVersion = 4210688 }
+vulkan metal surface detected
+using 4 vulkan extensions
 	VK_KHR_surface
 	VK_EXT_metal_surface
+	VK_EXT_debug_utils
 	VK_KHR_portability_enumeration
-vulkan app info created
-	.{ .sType = 0, .pNext = null, .pApplicationName = u8@10260e47b, .applicationVersion = 1, .pEngineName = u8@10260e47b, .engineVersion = 1, .apiVersion = 4210688 }
-vulkan extensions converted from zig to c format
 vulkan instance create info created
-	.{ .sType = 1, .pNext = null, .flags = 1, .pApplicationInfo = cimport.struct_VkApplicationInfo@16d936740, .enabledLayerCount = 0, .ppEnabledLayerNames = [*c]const u8@0, .enabledExtensionCount = 3, .ppEnabledExtensionNames = [*c]const u8@116520000 }
+	.{ .sType = 1, .pNext = null, .flags = 1, .pApplicationInfo = cimport.struct_VkApplicationInfo@16efd6760, .enabledLayerCount = 0, .ppEnabledLayerNames = [*c]const u8@0, .enabledExtensionCount = 4, .ppEnabledExtensionNames = [*c]const u8@114e40000 }
 vulkan instance created
 ```

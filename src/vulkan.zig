@@ -49,6 +49,7 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
     }
 
     if (is_metal_surface) {
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan metal surface detected\n", .{});
         flags |= c.VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         extensions_c[extensions_c_count - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
     }
