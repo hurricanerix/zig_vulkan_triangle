@@ -18,6 +18,7 @@ pub fn main() !void {
 
     const vk_version = vulkan.VERSION_1_4;
     const vk_extensions = [_][:0]const u8{"VK_EXT_debug_utils"};
+    const vk_layers = if (comptime builtin.mode == .Debug) [_][:0]const u8{"VK_LAYER_KHRONOS_validation"} else [_][:0]const u8{};
 
     const screen_width = 640;
     const screen_height = 480;
@@ -38,7 +39,7 @@ pub fn main() !void {
         extensions[glfw_context.extension_count + i] = vk_extensions[i];
     }
 
-    const vulkan_context = vulkan.create_context(allocator, app_info, app_info, vk_version, extensions) catch |err| {
+    const vulkan_context = vulkan.create_context(allocator, app_info, app_info, vk_version, extensions, &vk_layers) catch |err| {
         std.debug.print("Failed to create Vulkan context: {}\n", .{err});
         return;
     };

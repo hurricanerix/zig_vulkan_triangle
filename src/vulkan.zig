@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, CreateInstanceFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateInstanceFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -19,7 +19,7 @@ pub const Context = struct {
     }
 };
 
-pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_info: meta.Info, vk_version: u32, extensions: []const [:0]const u8) !Context {
+pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_info: meta.Info, vk_version: u32, extensions: []const [:0]const u8, layers: []const [:0]const u8) !Context {
     const vk_app_info: c.VkApplicationInfo = .{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = @ptrCast(@alignCast(app_info.name.ptr)),
@@ -38,7 +38,7 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
     const extensions_extra_count: u32 = if (is_metal_surface) 1 else 0;
     const extensions_c_count = @as(u32, @min(extensions.len, std.math.maxInt(u32))) + extensions_extra_count;
     const extensions_c = allocator.alloc([*c]const u8, extensions_c_count) catch |err| {
-        if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for extensions {}\n", .{err});
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for extensions: {}\n", .{err});
         return Error.ExtensionsAllocationFailed;
     };
     defer allocator.free(extensions_c);
@@ -54,10 +54,26 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
         extensions_c[extensions_c_count - 1] = c.VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
     }
 
+    const layers_c_count = @as(u32, @min(layers.len, std.math.maxInt(u32)));
+    const layers_c = allocator.alloc([*c]const u8, layers_c_count) catch |err| {
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocation mem for layers: {}\n", .{err});
+        return Error.LayersAllocationFailed;
+    };
+    defer allocator.free(layers_c);
+
+    for (0..layers.len) |i| {
+        layers_c[i] = @ptrCast(@alignCast(layers[i].ptr));
+    }
+
     if (comptime builtin.mode == .Debug) {
         std.debug.print("using {d} vulkan extensions\n", .{extensions_c_count});
         for (0..extensions_c_count) |i| {
             std.debug.print("\t{s}\n", .{extensions_c[i]});
+        }
+
+        std.debug.print("using {d} vulkan layers\n", .{layers_c_count});
+        for (0..layers_c_count) |i| {
+            std.debug.print("\t{s}\n", .{layers_c[i]});
         }
     }
 
@@ -67,6 +83,8 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
         .pApplicationInfo = &vk_app_info,
         .enabledExtensionCount = extensions_c_count,
         .ppEnabledExtensionNames = @ptrCast(@alignCast(extensions_c.ptr)),
+        .enabledLayerCount = layers_c_count,
+        .ppEnabledLayerNames = @ptrCast(@alignCast(layers_c.ptr)),
     };
 
     if (comptime builtin.mode == .Debug) std.debug.print("vulkan instance create info created\n\t{}\n", .{vk_create_info});
