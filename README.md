@@ -20,6 +20,12 @@ Development dependencies:
 brew install vulkan-headers vulkan-validationlayers vulkan-tools glslang
 ```
 
+Add the following to your shell:
+
+```
+export VK_LAYER_PATH="$(brew --prefix)/share/vulkan/explicit_layer.d"
+```
+
 ### Build & Run
 
 ```
