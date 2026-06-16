@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateInstanceFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -13,9 +13,20 @@ pub const VERSION_1_4 = c.VK_API_VERSION_1_4;
 
 pub const Context = struct {
     instance: c.VkInstance,
+    debug_messenger: ?c.VkDebugUtilsMessengerEXT,
 
     pub fn deinit(self: Context) void {
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});
+
+        if (self.debug_messenger) |messenger| {
+            const fn_ptr: c.PFN_vkDestroyDebugUtilsMessengerEXT = @ptrCast(c.vkGetInstanceProcAddr(self.instance, "vkDestroyDebugUtilsMessengerEXT"));
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan vkDestroyDebugUtilsMessengerEXT fn_ptr: {*}\n", .{fn_ptr});
+
+            fn_ptr.?(self.instance, messenger, null);
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan vkDestroyDebugUtilsMessengerEXT complete\n", .{});
+        }
         c.vkDestroyInstance(self.instance, null);
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan vkDestroyInstance complete\n", .{});
     }
 };
 
@@ -92,13 +103,62 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
     var instance: c.VkInstance = undefined;
     if (c.vkCreateInstance(&vk_create_info, null, &instance) != c.VK_SUCCESS) {
         // TODO: provide richer error messages with vkGetInstanceExtensionProperties.
-        std.debug.print("Error creating Vulkan instance\n", .{});
+        if (comptime builtin.mode == .Debug) std.debug.print("error creating vulkan instance\n", .{});
         return Error.CreateInstanceFailed;
     }
 
     if (comptime builtin.mode == .Debug) std.debug.print("vulkan instance created\n", .{});
 
+    var vk_debug_messenger: ?c.VkDebugUtilsMessengerEXT = null;
+    if (comptime builtin.mode == .Debug) {
+        const severity = c.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | c.VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | c.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | c.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        const message_type = c.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | c.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | c.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+        vk_debug_messenger = try create_debug_messenger(instance, severity, message_type);
+    }
+
     return Context{
         .instance = instance,
+        .debug_messenger = vk_debug_messenger,
     };
+}
+
+fn create_debug_messenger(instance: c.VkInstance, severity: c.VkDebugUtilsMessageSeverityFlagBitsEXT, message_type: c.VkDebugUtilsMessageTypeFlagBitsEXT) !c.VkDebugUtilsMessengerEXT {
+    const vk_create_info: c.VkDebugUtilsMessengerCreateInfoEXT = .{
+        .sType = c.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        .messageSeverity = severity,
+        .messageType = message_type,
+        .pfnUserCallback = &vk_debug_callback,
+    };
+
+    if (comptime builtin.mode == .Debug) std.debug.print("vulkan debug_messenger create info created\n\t{}\n", .{vk_create_info});
+
+    const fn_ptr: c.PFN_vkCreateDebugUtilsMessengerEXT = @ptrCast(c.vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+
+    if (comptime builtin.mode == .Debug) std.debug.print("vulkan vkCreateDebugUtilsMessengerEXT fn_ptr: {*}\n", .{fn_ptr});
+
+    var messenger: c.VkDebugUtilsMessengerEXT = undefined;
+    if (fn_ptr.?(
+        instance,
+        &vk_create_info,
+        null,
+        &messenger,
+    ) != c.VK_SUCCESS) {
+        if (comptime builtin.mode == .Debug) std.debug.print("error creating vulkan debug messenger\n", .{});
+        return Error.CreateDebugMessengerFailed;
+    }
+
+    if (comptime builtin.mode == .Debug) std.debug.print("vulkan vkCreateDebugUtilsMessengerEXT complete\n", .{});
+
+    return messenger;
+}
+
+fn vk_debug_callback(
+    severity: c.VkDebugUtilsMessageSeverityFlagBitsEXT,
+    message_type: c.VkDebugUtilsMessageTypeFlagsEXT,
+    callback_data: ?*const c.VkDebugUtilsMessengerCallbackDataEXT,
+    user_data: ?*anyopaque,
+) callconv(.c) c.VkBool32 {
+    if (comptime builtin.mode == .Debug) std.debug.print("vulkan debug: {d} {d} {s} {?}\n", .{ severity, message_type, callback_data.?.pMessage, user_data });
+    return c.VK_FALSE;
 }
