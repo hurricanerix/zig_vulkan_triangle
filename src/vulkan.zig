@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -14,6 +14,52 @@ pub const VERSION_1_4 = c.VK_API_VERSION_1_4;
 pub const Context = struct {
     instance: c.VkInstance,
     debug_messenger: ?c.VkDebugUtilsMessengerEXT,
+
+    device: ?c.VkPhysicalDevice = null,
+    queueIndex: u32 = 0,
+
+    pub fn set_device(self: *Context, allocator: std.mem.Allocator) !void {
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan enumerate physical devices\n", .{});
+        var device_count: u32 = 0;
+        if (c.vkEnumeratePhysicalDevices(self.instance, &device_count, null) != c.VK_SUCCESS) {
+            return Error.EnumeratePhysicalDeviceCountsFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device count: {d}\n", .{device_count});
+
+        const devices = try allocator.alloc(c.VkPhysicalDevice, device_count);
+        defer allocator.free(devices);
+
+        if (c.vkEnumeratePhysicalDevices(self.instance, &device_count, devices.ptr) != c.VK_SUCCESS) {
+            return Error.EnumeratePhysicalDevicesFailed;
+        }
+
+        for (0..device_count) |i| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device {d}: {?}\n", .{ i, devices[i] });
+
+            var property_count: u32 = 0;
+            c.vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &property_count, null);
+
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device {d} queue family property count: {d}\n", .{ i, property_count });
+
+            const properties = try allocator.alloc(c.VkQueueFamilyProperties, property_count);
+            defer allocator.free(properties);
+
+            c.vkGetPhysicalDeviceQueueFamilyProperties(devices[i], &property_count, properties.ptr);
+            for (0..property_count) |j| {
+                if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device {d} queue family property {d}: {d}, {d}\n", .{ i, j, properties[j].queueFlags, properties[j].queueCount });
+
+                if (properties[j].queueFlags & c.VK_QUEUE_GRAPHICS_BIT == c.VK_QUEUE_GRAPHICS_BIT) {
+                    if (comptime builtin.mode == .Debug) std.debug.print("vulkan acceptable physical device found: {d}\n", .{i});
+                    self.device = devices[i];
+                    self.queueIndex = @intCast(j);
+                    return;
+                }
+            }
+        }
+
+        return Error.AcceptableDeviceLocationFailed;
+    }
 
     pub fn deinit(self: Context) void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});

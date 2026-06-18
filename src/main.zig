@@ -39,11 +39,18 @@ pub fn main() !void {
         extensions[glfw_context.extension_count + i] = vk_extensions[i];
     }
 
-    const vulkan_context = vulkan.create_context(allocator, app_info, app_info, vk_version, extensions, &vk_layers) catch |err| {
+    var vulkan_context = vulkan.create_context(allocator, app_info, app_info, vk_version, extensions, &vk_layers) catch |err| {
         std.debug.print("Failed to create Vulkan context: {}\n", .{err});
         return;
     };
     defer vulkan_context.deinit();
+
+    vulkan_context.set_device(allocator) catch |err| {
+        std.debug.print("Failed to set device: {}\n", .{err});
+        return;
+    };
+
+    std.debug.print("Selected device: {any}\n", .{vulkan_context.device.?});
 
     while (!glfw_context.window_should_close()) {
         // TODO: Render here
