@@ -19,6 +19,7 @@ pub fn main() !void {
     const vk_version = vulkan.VERSION_1_4;
     const vk_extensions = [_][:0]const u8{"VK_EXT_debug_utils"};
     const vk_layers = if (comptime builtin.mode == .Debug) [_][:0]const u8{"VK_LAYER_KHRONOS_validation"} else [_][:0]const u8{};
+    const vk_device_extensions = [_][:0]const u8{};
 
     const screen_width = 640;
     const screen_height = 480;
@@ -45,7 +46,11 @@ pub fn main() !void {
     };
     defer vulkan_context.deinit();
 
-    vulkan_context.set_device(allocator) catch |err| {
+    const is_metal_surface = for (extensions) |ext| {
+        if (std.mem.eql(u8, ext, "VK_EXT_metal_surface")) break true;
+    } else false;
+
+    vulkan_context.create_device(allocator, is_metal_surface, &vk_device_extensions) catch |err| {
         std.debug.print("Failed to set device: {}\n", .{err});
         return;
     };

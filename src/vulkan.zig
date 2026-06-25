@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -15,10 +15,11 @@ pub const Context = struct {
     instance: c.VkInstance,
     debug_messenger: ?c.VkDebugUtilsMessengerEXT,
 
-    device: ?c.VkPhysicalDevice = null,
-    queueIndex: u32 = 0,
+    physical_device: ?c.VkPhysicalDevice = null,
+    queue_index: u32 = 0,
+    device: ?c.VkDevice = null,
 
-    pub fn set_device(self: *Context, allocator: std.mem.Allocator) !void {
+    pub fn create_device(self: *Context, allocator: std.mem.Allocator, is_metal_surface: bool, extensions: []const [:0]const u8) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan enumerate physical devices\n", .{});
         var device_count: u32 = 0;
         if (c.vkEnumeratePhysicalDevices(self.instance, &device_count, null) != c.VK_SUCCESS) {
@@ -34,7 +35,7 @@ pub const Context = struct {
             return Error.EnumeratePhysicalDevicesFailed;
         }
 
-        for (0..device_count) |i| {
+        for (0..device_count) |i| blk: {
             if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device {d}: {?}\n", .{ i, devices[i] });
 
             var property_count: u32 = 0;
@@ -51,18 +52,80 @@ pub const Context = struct {
 
                 if (properties[j].queueFlags & c.VK_QUEUE_GRAPHICS_BIT == c.VK_QUEUE_GRAPHICS_BIT) {
                     if (comptime builtin.mode == .Debug) std.debug.print("vulkan acceptable physical device found: {d}\n", .{i});
-                    self.device = devices[i];
-                    self.queueIndex = @intCast(j);
-                    return;
+                    self.physical_device = devices[i];
+                    self.queue_index = @intCast(j);
+                    break :blk;
                 }
             }
         }
 
-        return Error.AcceptableDeviceLocationFailed;
+        if (self.physical_device == null) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan acceptable device location not found\n", .{});
+            return Error.AcceptableDeviceLocationFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan acceptable device location found\n", .{});
+
+        const priority: f32 = 1.0;
+        const vk_queue_create_info: c.VkDeviceQueueCreateInfo = .{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueFamilyIndex = self.queue_index,
+            .queueCount = 1,
+            .pQueuePriorities = &priority,
+        };
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan device queue create info: {}\n", .{vk_queue_create_info});
+
+        const extensions_extra_count: u32 = if (is_metal_surface) 1 else 0;
+        const extensions_c_count = @as(u32, @min(extensions.len, std.math.maxInt(u32))) + extensions_extra_count;
+        const extensions_c = allocator.alloc([*c]const u8, extensions_c_count) catch |err| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for device extensions: {}\n", .{err});
+            return Error.DeviceExtensionsAllocationFailed;
+        };
+        defer allocator.free(extensions_c);
+
+        for (0..extensions.len) |i| {
+            extensions_c[i] = @ptrCast(@alignCast(extensions[i].ptr));
+        }
+
+        if (is_metal_surface) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan metal surface detected\n", .{});
+            extensions_c[extensions_c_count - 1] = "VK_KHR_portability_subset";
+        }
+
+        if (comptime builtin.mode == .Debug) {
+            std.debug.print("using {d} vulkan device extensions\n", .{extensions_c_count});
+            for (0..extensions_c_count) |i| {
+                std.debug.print("\t{s}\n", .{extensions_c[i]});
+            }
+        }
+
+        const vk_create_info: c.VkDeviceCreateInfo = .{
+            .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .queueCreateInfoCount = 1,
+            .pQueueCreateInfos = &vk_queue_create_info,
+            .enabledExtensionCount = extensions_c_count,
+            .ppEnabledExtensionNames = @ptrCast(@alignCast(extensions_c.ptr)),
+            .pEnabledFeatures = null,
+        };
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan device create info: {}\n", .{vk_create_info});
+
+        var device: c.VkDevice = undefined;
+        if (c.vkCreateDevice(self.physical_device.?, &vk_create_info, null, &device) != c.VK_SUCCESS) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan create device failed\n", .{});
+            return Error.CreateDeviceFailed;
+        }
+
+        self.device = device;
     }
 
     pub fn deinit(self: Context) void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});
+
+        if (self.device) |dev| {
+            c.vkDestroyDevice(dev, null);
+        }
 
         if (self.debug_messenger) |messenger| {
             const fn_ptr: c.PFN_vkDestroyDebugUtilsMessengerEXT = @ptrCast(c.vkGetInstanceProcAddr(self.instance, "vkDestroyDebugUtilsMessengerEXT"));
