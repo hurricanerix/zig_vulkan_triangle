@@ -18,6 +18,7 @@ pub const Context = struct {
     physical_device: ?c.VkPhysicalDevice = null,
     queue_index: u32 = 0,
     device: ?c.VkDevice = null,
+    surface: ?c.VkSurfaceKHR = null,
 
     pub fn create_device(self: *Context, allocator: std.mem.Allocator, is_metal_surface: bool, extensions: []const [:0]const u8) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan enumerate physical devices\n", .{});
@@ -123,8 +124,14 @@ pub const Context = struct {
     pub fn deinit(self: Context) void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});
 
+        if (self.surface) |s| {
+            c.vkDestroySurfaceKHR(self.instance, s, null);
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface destroyed\n", .{});
+        }
+
         if (self.device) |dev| {
             c.vkDestroyDevice(dev, null);
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan device destroyed\n", .{});
         }
 
         if (self.debug_messenger) |messenger| {

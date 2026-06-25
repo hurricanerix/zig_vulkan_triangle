@@ -55,7 +55,10 @@ pub fn main() !void {
         return;
     };
 
-    std.debug.print("Selected device: {any}\n", .{vulkan_context.device.?});
+    glfw_context.create_surface(&vulkan_context) catch |err| {
+        std.debug.print("Failed to set create surface: {}\n", .{err});
+        return;
+    };
 
     while (!glfw_context.window_should_close()) {
         // TODO: Render here

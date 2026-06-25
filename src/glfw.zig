@@ -1,11 +1,13 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const c = @import("c.zig").c;
+const vk = @import("vulkan.zig");
 
 const Error = error{
     InitFailed,
     VulkanNotSupported,
     WindowCreationFailed,
+    SurfaceCreationFailed,
 };
 
 pub const Context = struct {
@@ -23,6 +25,15 @@ pub const Context = struct {
 
     pub fn poll_events(_: Context) void {
         c.glfwPollEvents();
+    }
+
+    pub fn create_surface(self: Context, vk_ctx: *vk.Context) !void {
+        var surface: c.VkSurfaceKHR = undefined;
+        if (c.glfwCreateWindowSurface(vk_ctx.instance, self.window, null, &surface) != c.VK_SUCCESS) {
+            return Error.SurfaceCreationFailed;
+        }
+        if (comptime builtin.mode == .Debug) std.debug.print("glfw created vulkan surface\n", .{});
+        vk_ctx.surface = surface;
     }
 };
 
