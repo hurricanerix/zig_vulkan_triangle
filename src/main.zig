@@ -60,6 +60,11 @@ pub fn main() !void {
         return;
     };
 
+    vulkan_context.create_swap_chain(allocator) catch |err| {
+        std.debug.print("Failed to set create swap chain: {}\n", .{err});
+        return;
+    };
+
     while (!glfw_context.window_should_close()) {
         // TODO: Render here
 

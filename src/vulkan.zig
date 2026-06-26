@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsFailed, SufraceFormatsNotFound };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -19,6 +19,77 @@ pub const Context = struct {
     queue_index: u32 = 0,
     device: ?c.VkDevice = null,
     surface: ?c.VkSurfaceKHR = null,
+    surface_caps: ?c.VkSurfaceCapabilitiesKHR = null,
+    surface_format: ?c.VkSurfaceFormatKHR = null,
+
+    pub fn create_swap_chain(self: *Context, allocator: std.mem.Allocator) !void {
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan create swap chain\n", .{});
+        if (self.physical_device == null) {
+            return Error.NullPhysicalDeviceError;
+        }
+
+        if (self.surface == null) {
+            return Error.NullSurfaceError;
+        }
+
+        self.surface_caps = try self.get_surface_caps();
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface caps {}\n", .{self.surface_caps.?});
+
+        self.surface_format = try self.get_surface_format(allocator);
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface format {}\n", .{self.surface_format.?});
+    }
+
+    fn get_surface_format(self: *Context, allocator: std.mem.Allocator) !c.VkSurfaceFormatKHR {
+        var formats_count: u32 = 0;
+        if (c.vkGetPhysicalDeviceSurfaceFormatsKHR(self.physical_device.?, self.surface.?, &formats_count, null) != c.VK_SUCCESS) {
+            return Error.SurfaceFormatsCountFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface formats count: {d}\n", .{formats_count});
+
+        const formats = allocator.alloc(c.VkSurfaceFormatKHR, formats_count) catch |err| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for surface formats: {}\n", .{err});
+            return Error.DeviceExtensionsAllocationFailed;
+        };
+        defer allocator.free(formats);
+
+        if (c.vkGetPhysicalDeviceSurfaceFormatsKHR(self.physical_device.?, self.surface.?, &formats_count, @ptrCast(@alignCast(formats.ptr))) != c.VK_SUCCESS) {
+            return Error.SurfaceFormatsFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) {
+            for (0..formats_count) |i| {
+                const fmt: c.VkSurfaceFormatKHR = formats[i];
+                std.debug.print("vulkan surface formats: {d} {d}\n", .{ fmt.format, fmt.colorSpace });
+            }
+        }
+
+        if (formats_count == 0) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan no surface formats found\n", .{});
+            return Error.SufraceFormatsNotFound;
+        }
+
+        for (0..formats_count) |i| {
+            const fmt: c.VkSurfaceFormatKHR = formats[i];
+
+            if (fmt.format == c.VK_FORMAT_B8G8R8A8_SRGB and fmt.colorSpace == c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                if (comptime builtin.mode == .Debug) std.debug.print("vulkan selecting surface format[{d}]: {d} {d}\n", .{ i, fmt.format, fmt.colorSpace });
+                return fmt;
+            }
+        }
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan falling back on surface format[0]: {d} {d}\n", .{ formats[0].format, formats[0].colorSpace });
+        return formats[0];
+    }
+
+    fn get_surface_caps(self: *Context) !c.VkSurfaceCapabilitiesKHR {
+        var caps: c.VkSurfaceCapabilitiesKHR = undefined;
+        if (c.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self.physical_device.?, self.surface.?, &caps) != c.VK_SUCCESS) {
+            return Error.SurfaceCapsFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface caps: {}\n", .{caps});
+        return caps;
+    }
 
     pub fn create_device(self: *Context, allocator: std.mem.Allocator, is_metal_surface: bool, extensions: []const [:0]const u8) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan enumerate physical devices\n", .{});
