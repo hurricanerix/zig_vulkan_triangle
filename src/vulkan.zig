@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsFailed, SufraceFormatsNotFound };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsAllocationFailed, SurfaceFormatsFailed, SurfaceFormatsNotFound, SurfacePresentModesCountFailed, SurfacePresentModesAllocationFailed, SurfacePresentModesFailed, SurfacePresentModesNotFound };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -21,6 +21,7 @@ pub const Context = struct {
     surface: ?c.VkSurfaceKHR = null,
     surface_caps: ?c.VkSurfaceCapabilitiesKHR = null,
     surface_format: ?c.VkSurfaceFormatKHR = null,
+    surface_present_mode: ?c.VkPresentModeKHR = null,
 
     pub fn create_swap_chain(self: *Context, allocator: std.mem.Allocator) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan create swap chain\n", .{});
@@ -37,6 +38,61 @@ pub const Context = struct {
 
         self.surface_format = try self.get_surface_format(allocator);
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface format {}\n", .{self.surface_format.?});
+
+        self.surface_present_mode = try self.get_surface_present_mode(allocator);
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface present mode {}\n", .{self.surface_present_mode.?});
+    }
+
+    fn get_surface_present_mode(self: *Context, allocator: std.mem.Allocator) !c.VkPresentModeKHR {
+        var modes_count: u32 = 0;
+        if (c.vkGetPhysicalDeviceSurfacePresentModesKHR(self.physical_device.?, self.surface.?, &modes_count, null) != c.VK_SUCCESS) {
+            return Error.SurfacePresentModesCountFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface present modes count: {d}\n", .{modes_count});
+
+        const modes = allocator.alloc(c.VkPresentModeKHR, modes_count) catch |err| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for surface present modes: {}\n", .{err});
+            return Error.SurfacePresentModesAllocationFailed;
+        };
+        defer allocator.free(modes);
+
+        if (c.vkGetPhysicalDeviceSurfacePresentModesKHR(self.physical_device.?, self.surface.?, &modes_count, @ptrCast(@alignCast(modes.ptr))) != c.VK_SUCCESS) {
+            return Error.SurfacePresentModesFailed;
+        }
+
+        if (comptime builtin.mode == .Debug) {
+            for (0..modes_count) |i| {
+                const fmt: c.VkPresentModeKHR = modes[i];
+                std.debug.print("vulkan surface present modes: {}\n", .{fmt});
+            }
+        }
+
+        if (modes_count == 0) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan no surface present modes found\n", .{});
+            return Error.SurfacePresentModesNotFound;
+        }
+
+        for (0..modes_count) |i| {
+            const fmt: c.VkPresentModeKHR = modes[i];
+
+            if (fmt == c.VK_PRESENT_MODE_MAILBOX_KHR) {
+                if (comptime builtin.mode == .Debug) std.debug.print("vulkan selecting primary choice surface present mode: {d} {d}\n", .{ i, fmt });
+                return fmt;
+            }
+        }
+
+        for (0..modes_count) |i| {
+            const fmt: c.VkPresentModeKHR = modes[i];
+
+            if (fmt == c.VK_PRESENT_MODE_FIFO_KHR) {
+                if (comptime builtin.mode == .Debug) std.debug.print("vulkan selecting secondary choice surface present mode: {d} {d}\n", .{ i, fmt });
+                return fmt;
+            }
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan falling back on first available surface present mode: {d}\n", .{modes[0]});
+        return modes[0];
     }
 
     fn get_surface_format(self: *Context, allocator: std.mem.Allocator) !c.VkSurfaceFormatKHR {
@@ -49,7 +105,7 @@ pub const Context = struct {
 
         const formats = allocator.alloc(c.VkSurfaceFormatKHR, formats_count) catch |err| {
             if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate mem for surface formats: {}\n", .{err});
-            return Error.DeviceExtensionsAllocationFailed;
+            return Error.SurfaceFormatsAllocationFailed;
         };
         defer allocator.free(formats);
 
@@ -66,7 +122,7 @@ pub const Context = struct {
 
         if (formats_count == 0) {
             if (comptime builtin.mode == .Debug) std.debug.print("vulkan no surface formats found\n", .{});
-            return Error.SufraceFormatsNotFound;
+            return Error.SurfaceFormatsNotFound;
         }
 
         for (0..formats_count) |i| {
@@ -77,7 +133,7 @@ pub const Context = struct {
                 return fmt;
             }
         }
-        if (comptime builtin.mode == .Debug) std.debug.print("vulkan falling back on surface format[0]: {d} {d}\n", .{ formats[0].format, formats[0].colorSpace });
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan falling back on first available surface format[0]: {d} {d}\n", .{ formats[0].format, formats[0].colorSpace });
         return formats[0];
     }
 
