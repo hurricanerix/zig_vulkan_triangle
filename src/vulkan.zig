@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsAllocationFailed, SurfaceFormatsFailed, SurfaceFormatsNotFound, SurfacePresentModesCountFailed, SurfacePresentModesAllocationFailed, SurfacePresentModesFailed, SurfacePresentModesNotFound };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsAllocationFailed, SurfaceFormatsFailed, SurfaceFormatsNotFound, SurfacePresentModesCountFailed, SurfacePresentModesAllocationFailed, SurfacePresentModesFailed, SurfacePresentModesNotFound, CreateSwapchainFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -22,6 +22,7 @@ pub const Context = struct {
     surface_caps: ?c.VkSurfaceCapabilitiesKHR = null,
     surface_format: ?c.VkSurfaceFormatKHR = null,
     surface_present_mode: ?c.VkPresentModeKHR = null,
+    swapchain: ?c.VkSwapchainKHR = null,
 
     pub fn create_swap_chain(self: *Context, allocator: std.mem.Allocator) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan create swap chain\n", .{});
@@ -41,6 +42,32 @@ pub const Context = struct {
 
         self.surface_present_mode = try self.get_surface_present_mode(allocator);
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan surface present mode {}\n", .{self.surface_present_mode.?});
+
+        const swapchain_create_info: c.VkSwapchainCreateInfoKHR = .{
+            .sType = c.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .surface = self.surface.?,
+            .minImageCount = self.surface_caps.?.minImageCount,
+            .imageFormat = self.surface_format.?.format,
+            .imageColorSpace = self.surface_format.?.colorSpace,
+            .imageExtent = self.surface_caps.?.currentExtent,
+            .presentMode = self.surface_present_mode.?,
+            .imageArrayLayers = 1,
+            .imageUsage = c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // for rendering
+            .imageSharingMode = c.VK_SHARING_MODE_EXCLUSIVE, // assumes graphics and present are same queue
+            .preTransform = self.surface_caps.?.currentTransform,
+            .compositeAlpha = c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .clipped = c.VK_TRUE,
+        };
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain {any}\n", .{swapchain_create_info});
+
+        var swapchain: c.VkSwapchainKHR = undefined;
+        if (c.vkCreateSwapchainKHR(self.device.?, &swapchain_create_info, null, &swapchain) != c.VK_SUCCESS) {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain creation failed\n", .{});
+            return Error.CreateSwapchainFailed;
+        }
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain created: {any}\n", .{swapchain});
+        self.swapchain = swapchain;
     }
 
     fn get_surface_present_mode(self: *Context, allocator: std.mem.Allocator) !c.VkPresentModeKHR {
@@ -250,6 +277,11 @@ pub const Context = struct {
 
     pub fn deinit(self: Context) void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});
+
+        if (self.swapchain) |s| {
+            c.vkDestroySwapchainKHR(self.device.?, s, null);
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain destroyed\n", .{});
+        }
 
         if (self.surface) |s| {
             c.vkDestroySurfaceKHR(self.instance, s, null);

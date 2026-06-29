@@ -19,7 +19,7 @@ pub fn main() !void {
     const vk_version = vulkan.VERSION_1_4;
     const vk_extensions = [_][:0]const u8{"VK_EXT_debug_utils"};
     const vk_layers = if (comptime builtin.mode == .Debug) [_][:0]const u8{"VK_LAYER_KHRONOS_validation"} else [_][:0]const u8{};
-    const vk_device_extensions = [_][:0]const u8{};
+    const vk_device_extensions = [_][:0]const u8{"VK_KHR_swapchain"};
 
     const screen_width = 640;
     const screen_height = 480;
