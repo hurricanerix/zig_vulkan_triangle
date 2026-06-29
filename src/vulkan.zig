@@ -190,7 +190,7 @@ pub const Context = struct {
             return Error.EnumeratePhysicalDevicesFailed;
         }
 
-        for (0..device_count) |i| blk: {
+        blk: for (0..device_count) |i| {
             if (comptime builtin.mode == .Debug) std.debug.print("vulkan physical device {d}: {?}\n", .{ i, devices[i] });
 
             var property_count: u32 = 0;
