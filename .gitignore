@@ -8,16 +8,16 @@
 # But not these files...
 !/.gitignore
 
-!*.zig
 !build.zig.zon
+!*.zig
+!src/**/*.vert
+!src/**/*.frag
 
 !vendor/**/*.c
 !vendor/**/*.h
 
 !README.md
 !LICENSE
-
-!Makefile
 
 # ...even if they are in subdirectories
 !*/

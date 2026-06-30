@@ -22,5 +22,17 @@ pub fn build(b: *std.Build) void {
         exe.root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
     }
 
+    const compile_vert = b.addSystemCommand(&.{ "glslang", "-V", "-o" });
+    const vert_spv = compile_vert.addOutputFileArg("vert.spv");
+    compile_vert.addFileArg(b.path("src/shaders/triangle.vert"));
+    const install_vert = b.addInstallFileWithDir(vert_spv, .bin, "vert.spv");
+    b.getInstallStep().dependOn(&install_vert.step);
+
+    const compile_frag = b.addSystemCommand(&.{ "glslang", "-V", "-o" });
+    const frag_spv = compile_frag.addOutputFileArg("frag.spv");
+    compile_frag.addFileArg(b.path("src/shaders/triangle.frag"));
+    const install_frag = b.addInstallFileWithDir(frag_spv, .bin, "frag.spv");
+    b.getInstallStep().dependOn(&install_frag.step);
+
     b.installArtifact(exe);
 }
