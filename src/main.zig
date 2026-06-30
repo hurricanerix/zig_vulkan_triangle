@@ -61,7 +61,12 @@ pub fn main() !void {
     };
 
     vulkan_context.create_swap_chain(allocator) catch |err| {
-        std.debug.print("Failed to set create swap chain: {}\n", .{err});
+        std.debug.print("Failed to set create swapchain: {}\n", .{err});
+        return;
+    };
+
+    vulkan_context.create_image_views(allocator) catch |err| {
+        std.debug.print("Failed to set create swapchain images: {}\n", .{err});
         return;
     };
 

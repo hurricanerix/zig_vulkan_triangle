@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const meta = @import("meta.zig");
 const c = @import("c.zig").c;
 
-const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsAllocationFailed, SurfaceFormatsFailed, SurfaceFormatsNotFound, SurfacePresentModesCountFailed, SurfacePresentModesAllocationFailed, SurfacePresentModesFailed, SurfacePresentModesNotFound, CreateSwapchainFailed };
+const Error = error{ ExtensionsAllocationFailed, LayersAllocationFailed, CreateDebugMessengerFailed, CreateInstanceFailed, EnumeratePhysicalDeviceCountsFailed, EnumeratePhysicalDevicesFailed, QueueFamilyPropertiesFailed, AcceptableDeviceLocationFailed, CreateDeviceFailed, DeviceExtensionsAllocationFailed, SurfaceCapsFailed, NullPhysicalDeviceError, NullSurfaceError, SurfaceFormatsCountFailed, SurfaceFormatsAllocationFailed, SurfaceFormatsFailed, SurfaceFormatsNotFound, SurfacePresentModesCountFailed, SurfacePresentModesAllocationFailed, SurfacePresentModesFailed, SurfacePresentModesNotFound, CreateSwapchainFailed, GetSwapchainImageCountFialed, GetSwapchainImagesAllocationFialed, GetSwapchainImagesFialed, NoSwapchainImagesFound, AllocImageViewsMemoryFialed, CreateImageViewFailed };
 
 pub const VERSION_1_0 = c.VK_API_VERSION_1_0;
 pub const VERSION_1_1 = c.VK_API_VERSION_1_1;
@@ -12,6 +12,8 @@ pub const VERSION_1_3 = c.VK_API_VERSION_1_3;
 pub const VERSION_1_4 = c.VK_API_VERSION_1_4;
 
 pub const Context = struct {
+    allocator: std.mem.Allocator,
+
     instance: c.VkInstance,
     debug_messenger: ?c.VkDebugUtilsMessengerEXT,
 
@@ -23,6 +25,52 @@ pub const Context = struct {
     surface_format: ?c.VkSurfaceFormatKHR = null,
     surface_present_mode: ?c.VkPresentModeKHR = null,
     swapchain: ?c.VkSwapchainKHR = null,
+    image_views: ?[]c.VkImageView = null,
+
+    pub fn create_image_views(self: *Context, allocator: std.mem.Allocator) !void {
+        var image_count: u32 = 0;
+        if (c.vkGetSwapchainImagesKHR(self.device.?, self.swapchain.?, &image_count, null) != c.VK_SUCCESS) {
+            return Error.GetSwapchainImageCountFialed;
+        }
+
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain images {d}\n", .{image_count});
+
+        const images = allocator.alloc(c.VkImage, image_count) catch |err| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate memory for images: {}\n", .{err});
+            return Error.GetSwapchainImagesAllocationFialed;
+        };
+        defer allocator.free(images);
+
+        if (c.vkGetSwapchainImagesKHR(self.device.?, self.swapchain.?, &image_count, @ptrCast(@alignCast(images.ptr))) != c.VK_SUCCESS) {
+            return Error.GetSwapchainImagesFialed;
+        }
+
+        self.image_views = allocator.alloc(c.VkImageView, images.len) catch |err| {
+            if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not allocate memory for image views: {}\n", .{err});
+            return Error.AllocImageViewsMemoryFialed;
+        };
+
+        for (0..images.len) |i| {
+            const iv_create_info: c.VkImageViewCreateInfo = .{ .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .viewType = c.VK_IMAGE_VIEW_TYPE_2D, .image = images[i], .format = self.surface_format.?.format, .subresourceRange = .{
+                .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            } };
+            var view: c.VkImageView = null;
+            if (c.vkCreateImageView(self.device.?, &iv_create_info, null, &view) != c.VK_SUCCESS) {
+                if (comptime builtin.mode == .Debug) std.debug.print("vulkan could not create image views\n", .{});
+                return Error.CreateImageViewFailed;
+            }
+            self.image_views.?[i] = view;
+        }
+
+        if (image_count == 0) {
+            return Error.NoSwapchainImagesFound;
+        }
+        if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain images found: {d}\n", .{self.image_views.?.len});
+    }
 
     pub fn create_swap_chain(self: *Context, allocator: std.mem.Allocator) !void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan create swap chain\n", .{});
@@ -278,6 +326,16 @@ pub const Context = struct {
     pub fn deinit(self: Context) void {
         if (comptime builtin.mode == .Debug) std.debug.print("vulkan deinit context\n", .{});
 
+        for (0..self.image_views.?.len) |i| {
+            if (self.image_views) |views| {
+                c.vkDestroyImageView(self.device.?, views[i], null);
+            }
+        }
+
+        if (self.image_views) |views| {
+            self.allocator.free(views);
+        }
+
         if (self.swapchain) |s| {
             c.vkDestroySwapchainKHR(self.device.?, s, null);
             if (comptime builtin.mode == .Debug) std.debug.print("vulkan swapchain destroyed\n", .{});
@@ -393,6 +451,7 @@ pub fn create_context(allocator: std.mem.Allocator, app_info: meta.Info, engine_
     }
 
     return Context{
+        .allocator = allocator,
         .instance = instance,
         .debug_messenger = vk_debug_messenger,
     };

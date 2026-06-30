@@ -1,6 +1,6 @@
 # Zig Vulkan Triangle
 
-A simple app intended to help me learn how [Zig](https://ziglang.org/) and [Vulkan](https://www.vulkan.org/) work.
+A simple app intended to help me learn [Zig](https://ziglang.org/) and [Vulkan](https://www.vulkan.org/).
 
 Currently only supports macOS, with Linux and Windows support comming soon.
 
@@ -36,35 +36,79 @@ glfw reports vulkan supported
 glfw window created
 glfw extensions received
 vulkan app info created
-	.{ .sType = 0, .pNext = null, .pApplicationName = u8@10421b839, .applicationVersion = 1, .pEngineName = u8@10421b839, .engineVersion = 1, .apiVersion = 4210688 }
-vulkan metal surface detected
-using 4 vulkan extensions
+	.{ .sType = 0, .pNext = null, .pApplicationName = u8@12c29ca, .applicationVersion = 1, .pEngineName = u8@12c29ca, .engineVersion = 1, .apiVersion = 4210688 }
+using 3 vulkan extensions
 	VK_KHR_surface
-	VK_EXT_metal_surface
+	VK_KHR_xcb_surface
 	VK_EXT_debug_utils
-	VK_KHR_portability_enumeration
 using 1 vulkan layers
 	VK_LAYER_KHRONOS_validation
 vulkan instance create info created
-	.{ .sType = 1, .pNext = null, .flags = 1, .pApplicationInfo = cimport.struct_VkApplicationInfo@16bd3df70, .enabledLayerCount = 1, .ppEnabledLayerNames = [*c]const u8@118100000, .enabledExtensionCount = 4, .ppEnabledExtensionNames = [*c]const u8@1180e0000 }
+	.{ .sType = 1, .pNext = null, .flags = 0, .pApplicationInfo = cimport.struct_VkApplicationInfo@7ffceb829f48, .enabledLayerCount = 1, .ppEnabledLayerNames = [*c]const u8@7f5dca6c0000, .enabledExtensionCount = 3, .ppEnabledExtensionNames = [*c]const u8@7f5dca6e0000 }
 vulkan instance created
 vulkan debug_messenger create info created
-	.{ .sType = 1000128004, .pNext = null, .flags = 0, .messageSeverity = 4369, .messageType = 7, .pfnUserCallback = fn (c_uint, u32, [*c]const cimport.struct_VkDebugUtilsMessengerCallbackDataEXT, ?*anyopaque) callconv(.c) u32@1041d3cb4, .pUserData = null }
-vulkan vkCreateDebugUtilsMessengerEXT fn_ptr: *const fn (?*cimport.struct_VkInstance_T, [*c]const cimport.struct_VkDebugUtilsMessengerCreateInfoEXT, [*c]const cimport.struct_VkAllocationCallbacks, [*c]?*cimport.struct_VkDebugUtilsMessengerEXT_T) callconv(.c) c_int@10444330c
+	.{ .sType = 1000128004, .pNext = null, .flags = 0, .messageSeverity = 4369, .messageType = 7, .pfnUserCallback = fn (c_uint, u32, [*c]const cimport.struct_VkDebugUtilsMessengerCallbackDataEXT, ?*anyopaque) callconv(.c) u32@12119d0, .pUserData = null }
+vulkan vkCreateDebugUtilsMessengerEXT fn_ptr: *const fn (?*cimport.struct_VkInstance_T, [*c]const cimport.struct_VkDebugUtilsMessengerCreateInfoEXT, [*c]const cimport.struct_VkAllocationCallbacks, [*c]?*cimport.struct_VkDebugUtilsMessengerEXT_T) callconv(.c) c_int@7f5df49ab3e0
 vulkan vkCreateDebugUtilsMessengerEXT complete
 vulkan enumerate physical devices
-vulkan physical device count: 1
-vulkan physical device 0: cimport.struct_VkPhysicalDevice_T@81cff1120
-vulkan physical device 0 queue family property count: 4
-vulkan physical device 0 queue family property 0: 7, 1
+vulkan debug: 16 1 linux_read_sorted_physical_devices: null
+vulkan debug: 16 1      Original order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits) null
+vulkan debug: 16 1      Sorted order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER   null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits)   null
+vulkan debug: 1 1 Copying old device 0 into new device 0 null
+vulkan debug: 1 1 Copying old device 1 into new device 1 null
+vulkan debug: 16 1 linux_read_sorted_physical_devices: null
+vulkan debug: 16 1      Original order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits) null
+vulkan debug: 16 1      Sorted order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER   null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits)   null
+vulkan debug: 1 1 Copying old device 0 into new device 0 null
+vulkan debug: 1 1 Copying old device 1 into new device 1 null
+vulkan physical device count: 2
+vulkan debug: 16 1 linux_read_sorted_physical_devices: null
+vulkan debug: 16 1      Original order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits) null
+vulkan debug: 16 1      Sorted order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER   null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits)   null
+vulkan debug: 1 1 Copying old device 0 into new device 0 null
+vulkan debug: 1 1 Copying old device 1 into new device 1 null
+vulkan debug: 16 1 linux_read_sorted_physical_devices: null
+vulkan debug: 16 1      Original order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits) null
+vulkan debug: 16 1      Sorted order: null
+vulkan debug: 16 1            [0] NVIDIA GeForce RTX 4070 SUPER   null
+vulkan debug: 16 1            [1] llvmpipe (LLVM 22.1.5, 256 bits)   null
+vulkan debug: 1 1 Copying old device 0 into new device 0 null
+vulkan debug: 1 1 Copying old device 1 into new device 1 null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_virtio.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_radeon.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_powervr_mesa.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_panfrost.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_nouveau.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_intel.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_intel_hasvk.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_freedreno.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_broadcom.so due to not having any physical devices null
+vulkan debug: 16 1 Removing driver /usr/lib64/libvulkan_asahi.so due to not having any physical devices null
+vulkan physical device 0: cimport.struct_VkPhysicalDevice_T@2c90e100
+vulkan physical device 0 queue family property count: 6
+vulkan physical device 0 queue family property 0: 15, 16
 vulkan acceptable physical device found: 0
 vulkan acceptable device location found
-vulkan device queue create info: .{ .sType = 2, .pNext = null, .flags = 0, .queueFamilyIndex = 0, .queueCount = 1, .pQueuePriorities = f32@104215608 }
-vulkan metal surface detected
+vulkan device queue create info: .{ .sType = 2, .pNext = null, .flags = 0, .queueFamilyIndex = 0, .queueCount = 1, .pQueuePriorities = f32@12c2728 }
 using 1 vulkan device extensions
-	VK_KHR_portability_subset
-vulkan device create info: .{ .sType = 3, .pNext = null, .flags = 0, .queueCreateInfoCount = 1, .pQueueCreateInfos = cimport.struct_VkDeviceQueueCreateInfo@16bd3e178, .enabledLayerCount = 0, .ppEnabledLayerNames = [*c]const u8@0, .enabledExtensionCount = 1, .ppEnabledExtensionNames = [*c]const u8@1180e0008, .pEnabledFeatures = cimport.struct_VkPhysicalDeviceFeatures@0 }
-vulkan debug: 16 1 Inserted device layer "VK_LAYER_KHRONOS_validation" (/opt/homebrew/Cellar/vulkan-validationlayers/1.4.350.0/lib/libVkLayer_khronos_validation.dylib) null
+	VK_KHR_swapchain
+vulkan device create info: .{ .sType = 3, .pNext = null, .flags = 0, .queueCreateInfoCount = 1, .pQueueCreateInfos = cimport.struct_VkDeviceQueueCreateInfo@7ffceb82a360, .enabledLayerCount = 0, .ppEnabledLayerNames = [*c]const u8@0, .enabledExtensionCount = 1, .ppEnabledExtensionNames = [*c]const u8@7f5dca660000, .pEnabledFeatures = cimport.struct_VkPhysicalDeviceFeatures@0 }
+vulkan debug: 16 1 Inserted device layer "VK_LAYER_KHRONOS_validation" (/usr/lib64/libVkLayer_khronos_validation.so) null
+vulkan debug: 16 1 Failed to find vkGetDeviceProcAddr in layer "/usr/lib64/libVkLayer_MESA_device_select.so" null
 vulkan debug: 16 1 vkCreateDevice layer callstack setup to: null
 vulkan debug: 16 1    <Application> null
 vulkan debug: 16 1      || null
@@ -73,92 +117,36 @@ vulkan debug: 16 1      || null
 vulkan debug: 16 1    VK_LAYER_KHRONOS_validation null
 vulkan debug: 16 1            Type: Explicit null
 vulkan debug: 16 1            Enabled By: By the Application null
-vulkan debug: 16 1            Manifest: /opt/homebrew/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json null
-vulkan debug: 16 1            Library:  /opt/homebrew/Cellar/vulkan-validationlayers/1.4.350.0/lib/libVkLayer_khronos_validation.dylib null
+vulkan debug: 16 1            Manifest: /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json null
+vulkan debug: 16 1            Library:  /usr/lib64/libVkLayer_khronos_validation.so null
 vulkan debug: 16 1      || null
 vulkan debug: 16 1    <Device> null
-vulkan debug: 16 1        Using "Apple M1" with driver: "/opt/homebrew/Cellar/molten-vk/1.4.1/lib/libMoltenVK.dylib" null
-vulkan debug: 16 1 Vulkan semaphores using MTLEvent. null
-vulkan debug: 16 1 Descriptor sets binding resources using Metal3 argument buffers. null
-vulkan debug: 16 1 Created VkDevice to run on GPU Apple M1 with the following 1 Vulkan extensions enabled:
-	VK_KHR_portability_subset v1 null
+vulkan debug: 16 1        Using "NVIDIA GeForce RTX 4070 SUPER" with driver: "/usr/lib64/libGLX_nvidia.so.595.80" null
 glfw created vulkan surface
 vulkan create swap chain
-vulkan surface caps: .{ .minImageCount = 2, .maxImageCount = 3, .currentExtent = .{ .width = 1280, .height = 960 }, .minImageExtent = .{ .width = 1, .height = 1 }, .maxImageExtent = .{ .width = 16384, .height = 16384 }, .maxImageArrayLayers = 1, .supportedTransforms = 1, .currentTransform = 1, .supportedCompositeAlpha = 13, .supportedUsageFlags = 31 }
-vulkan surface caps .{ .minImageCount = 2, .maxImageCount = 3, .currentExtent = .{ .width = 1280, .height = 960 }, .minImageExtent = .{ .width = 1, .height = 1 }, .maxImageExtent = .{ .width = 16384, .height = 16384 }, .maxImageArrayLayers = 1, .supportedTransforms = 1, .currentTransform = 1, .supportedCompositeAlpha = 13, .supportedUsageFlags = 31 }
-vulkan surface formats count: 60
+vulkan surface caps: .{ .minImageCount = 3, .maxImageCount = 8, .currentExtent = .{ .width = 640, .height = 480 }, .minImageExtent = .{ .width = 640, .height = 480 }, .maxImageExtent = .{ .width = 640, .height = 480 }, .maxImageArrayLayers = 1, .supportedTransforms = 1, .currentTransform = 1, .supportedCompositeAlpha = 1, .supportedUsageFlags = 159 }
+vulkan surface caps .{ .minImageCount = 3, .maxImageCount = 8, .currentExtent = .{ .width = 640, .height = 480 }, .minImageExtent = .{ .width = 640, .height = 480 }, .maxImageExtent = .{ .width = 640, .height = 480 }, .maxImageArrayLayers = 1, .supportedTransforms = 1, .currentTransform = 1, .supportedCompositeAlpha = 1, .supportedUsageFlags = 159 }
+vulkan surface formats count: 2
 vulkan surface formats: 44 0
 vulkan surface formats: 50 0
-vulkan surface formats: 97 0
-vulkan surface formats: 64 0
-vulkan surface formats: 58 0
-vulkan surface formats: 44 1000104001
-vulkan surface formats: 50 1000104001
-vulkan surface formats: 97 1000104001
-vulkan surface formats: 64 1000104001
-vulkan surface formats: 58 1000104001
-vulkan surface formats: 44 1000104004
-vulkan surface formats: 50 1000104004
-vulkan surface formats: 97 1000104004
-vulkan surface formats: 64 1000104004
-vulkan surface formats: 58 1000104004
-vulkan surface formats: 44 1000104006
-vulkan surface formats: 50 1000104006
-vulkan surface formats: 97 1000104006
-vulkan surface formats: 64 1000104006
-vulkan surface formats: 58 1000104006
-vulkan surface formats: 44 1000104012
-vulkan surface formats: 50 1000104012
-vulkan surface formats: 97 1000104012
-vulkan surface formats: 64 1000104012
-vulkan surface formats: 58 1000104012
-vulkan surface formats: 44 1000104013
-vulkan surface formats: 50 1000104013
-vulkan surface formats: 97 1000104013
-vulkan surface formats: 64 1000104013
-vulkan surface formats: 58 1000104013
-vulkan surface formats: 44 1000104002
-vulkan surface formats: 50 1000104002
-vulkan surface formats: 97 1000104002
-vulkan surface formats: 64 1000104002
-vulkan surface formats: 58 1000104002
-vulkan surface formats: 44 1000104014
-vulkan surface formats: 50 1000104014
-vulkan surface formats: 97 1000104014
-vulkan surface formats: 64 1000104014
-vulkan surface formats: 58 1000104014
-vulkan surface formats: 44 1000104007
-vulkan surface formats: 50 1000104007
-vulkan surface formats: 97 1000104007
-vulkan surface formats: 64 1000104007
-vulkan surface formats: 58 1000104007
-vulkan surface formats: 44 1000104010
-vulkan surface formats: 50 1000104010
-vulkan surface formats: 97 1000104010
-vulkan surface formats: 64 1000104010
-vulkan surface formats: 58 1000104010
-vulkan surface formats: 44 1000104008
-vulkan surface formats: 50 1000104008
-vulkan surface formats: 97 1000104008
-vulkan surface formats: 64 1000104008
-vulkan surface formats: 58 1000104008
-vulkan surface formats: 44 1000104003
-vulkan surface formats: 50 1000104003
-vulkan surface formats: 97 1000104003
-vulkan surface formats: 64 1000104003
-vulkan surface formats: 58 1000104003
-vulkan selectingsurface format[1]: 50 0
+vulkan selecting surface format[1]: 50 0
 vulkan surface format .{ .format = 50, .colorSpace = 0 }
-vulkan surface present modes count: 2
+vulkan surface present modes count: 4
 vulkan surface present modes: 2
+vulkan surface present modes: 3
 vulkan surface present modes: 0
+vulkan surface present modes: 1000361000
 vulkan selecting secondary choice surface present mode: 0 2
 vulkan surface present mode 2
+vulkan swapchain .{ .sType = 1000001000, .pNext = null, .flags = 0, .surface = cimport.struct_VkSurfaceKHR_T@20000000002, .minImageCount = 3, .imageFormat = 50, .imageColorSpace = 0, .imageExtent = .{ .width = 640, .height = 480 }, .imageArrayLayers = 1, .imageUsage = 16, .imageSharingMode = 0, .queueFamilyIndexCount = 0, .pQueueFamilyIndices = u32@0, .preTransform = 1, .compositeAlpha = 1, .presentMode = 2, .clipped = 1, .oldSwapchain = null }
+vulkan swapchain created: cimport.struct_VkSwapchainKHR_T@30000000003
+vulkan swapchain images 3
+vulkan swapchain images found: 3
 vulkan deinit context
+vulkan swapchain destroyed
 vulkan surface destroyed
-vulkan debug: 16 1 Destroyed VkDevice on GPU Apple M1 with 1 Vulkan extensions enabled. null
 vulkan device destroyed
-vulkan vkDestroyDebugUtilsMessengerEXT fn_ptr: *const fn (?*cimport.struct_VkInstance_T, ?*cimport.struct_VkDebugUtilsMessengerEXT_T, [*c]const cimport.struct_VkAllocationCallbacks) callconv(.c) void@1044437c8
+vulkan vkDestroyDebugUtilsMessengerEXT fn_ptr: *const fn (?*cimport.struct_VkInstance_T, ?*cimport.struct_VkDebugUtilsMessengerEXT_T, [*c]const cimport.struct_VkAllocationCallbacks) callconv(.c) void@7f5df49ab5c0
 vulkan vkDestroyDebugUtilsMessengerEXT complete
 vulkan vkDestroyInstance complete
 ```
